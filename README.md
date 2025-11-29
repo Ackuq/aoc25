@@ -14,8 +14,13 @@ uv sync
 ### Formatting
 
 ```sh
+uv format
+```
+
+### Import sorting
+
+```sh
 uv run ruff check --select I --fix
-uv run ruff format
 ```
 
 ### Linting
