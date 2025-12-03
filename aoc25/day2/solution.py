@@ -25,21 +25,13 @@ def is_invalid(num: int, part2: bool = False) -> bool:
 
 
 def part1(ranges: list[range]) -> None:
-    invalids = set[int]()
-    for range in ranges:
-        for num in range:
-            if is_invalid(num):
-                invalids.add(num)
+    invalids = set(num for range in ranges for num in range if is_invalid(num))
 
     print(f"Part 1: {sum(invalids)}")
 
 
 def part2(ranges: list[range]) -> None:
-    invalids = set[int]()
-    for range in ranges:
-        for num in range:
-            if is_invalid(num, True):
-                invalids.add(num)
+    invalids = set(num for range in ranges for num in range if is_invalid(num, True))
 
     print(f"Part 2: {sum(invalids)}")
 
