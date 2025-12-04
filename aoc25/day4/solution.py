@@ -12,40 +12,31 @@ def parse_input(lines: list[str]) -> set[Coord]:
 
 
 def neighbor_count(roll: Coord, rolls: set[Coord]) -> int:
-    count = 0
-    for dx in range(-1, 2):
-        for dy in range(-1, 2):
-            if dx == 0 and dy == 0:
-                continue
-            coord = (roll[0] + dx, roll[1] + dy)
-            if coord in rolls:
-                count += 1
+    count = sum(
+        1
+        for dx in range(-1, 2)
+        for dy in range(-1, 2)
+        if (dx != 0 or dy != 0) and (roll[0] + dx, roll[1] + dy) in rolls
+    )
 
     return count
 
 
 def part1(rolls: set[Coord]) -> None:
-    solution = 0
-    for roll in rolls:
-        if neighbor_count(roll, rolls) < 4:
-            solution += 1
+    solution = sum(1 for roll in rolls if neighbor_count(roll, rolls) < 4)
 
     print(f"Part 1: {solution}")
 
 
 def part2(rolls: set[Coord]) -> None:
     solution = 0
-    while True:
-        has_changed = False
-        new_rolls = rolls.copy()
-        for roll in rolls:
-            if neighbor_count(roll, rolls) < 4:
-                solution += 1
-                new_rolls.remove(roll)
-                has_changed = True
-        if not has_changed:
-            break
-        rolls = new_rolls
+
+    def to_remove():
+        return {roll for roll in rolls if neighbor_count(roll, rolls) < 4}
+
+    while removable := to_remove():
+        solution += len(removable)
+        rolls -= removable
 
     print(f"Part 2: {solution}")
 
