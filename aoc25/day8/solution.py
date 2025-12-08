@@ -1,3 +1,5 @@
+from math import prod
+
 Coord = tuple[int, int, int]
 
 
@@ -13,91 +15,57 @@ def straight_line_distance(a: Coord, b: Coord) -> float:
     return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2) ** 0.5
 
 
-class UnionFind:
-    def __init__(self, n: int):
-        self.parent = list(range(n))
-        self.size = [1] * n
+def get_distances(coords: list[Coord]) -> list[tuple[float, int, int]]:
+    n = len(coords)
 
-    def find(self, x: int) -> int:
-        if self.parent[x] != x:
-            self.parent[x] = self.find(self.parent[x])
-        return self.parent[x]
+    distances: list[tuple[float, int, int]] = []
+    for i in range(n):
+        for j in range(i + 1, n):
+            distances.append((straight_line_distance(coords[i], coords[j]), i, j))
 
-    def union(self, x: int, y: int) -> bool:
-        root_x = self.find(x)
-        root_y = self.find(y)
+    distances.sort()
 
-        if root_x == root_y:
-            return False
-
-        if self.size[root_x] < self.size[root_y]:
-            root_x, root_y = root_y, root_x
-
-        self.parent[root_y] = root_x
-        self.size[root_x] += self.size[root_y]
-        return True
-
-    def get_circuit_sizes(self) -> list[int]:
-        circuits: dict[int, int] = {}
-        for i in range(len(self.parent)):
-            root = self.find(i)
-            circuits[root] = self.size[root]
-        return list(circuits.values())
-
-    def num_circuits(self) -> int:
-        roots = set()
-        for i in range(len(self.parent)):
-            roots.add(self.find(i))
-        return len(roots)
+    return distances
 
 
 def part1(coords: list[Coord]) -> None:
     n = len(coords)
-
-    distances: list[tuple[float, int, int]] = []
-    for i in range(n):
-        for j in range(i + 1, n):
-            dist = straight_line_distance(coords[i], coords[j])
-            distances.append((dist, i, j))
-
-    distances.sort()
-
+    distances = get_distances(coords)
     connections = 10 if n == 20 else 1000
-    uf = UnionFind(n)
 
-    for idx, (dist, i, j) in enumerate(distances):
-        if idx >= connections:
-            break
-        uf.union(i, j)
+    circuit_map = {i: frozenset([i]) for i in range(n)}
 
-    circuit_sizes = sorted(uf.get_circuit_sizes(), reverse=True)
-    result = circuit_sizes[0] * circuit_sizes[1] * circuit_sizes[2]
+    for _, i, j in distances[:connections]:
+        new_set = circuit_map[i].union(circuit_map[j])
+        for junction in new_set:
+            circuit_map[junction] = new_set
 
-    print(f"Part 1: {result}")
+    circuits = list(set(circuit_map.values()))
+    circuits = sorted(circuits, key=lambda circuit: len(circuit), reverse=True)
+
+    solution = prod(len(circuit) for circuit in circuits[:3])
+
+    print(f"Part 1: {solution}")
 
 
 def part2(coords: list[Coord]) -> None:
     n = len(coords)
+    distances = get_distances(coords)
+    circuit_map = {i: frozenset([i]) for i in range(n)}
 
-    distances: list[tuple[float, int, int]] = []
-    for i in range(n):
-        for j in range(i + 1, n):
-            dist = straight_line_distance(coords[i], coords[j])
-            distances.append((dist, i, j))
+    z = 0
+    while len(list(set(circuit_map.values()))) != 1:
+        _, i, j = distances[z]
+        new_set = circuit_map[i].union(circuit_map[j])
+        for junction in new_set:
+            circuit_map[junction] = new_set
+        z += 1
 
-    distances.sort()
+    _, i, j = distances[z - 1]
 
-    uf = UnionFind(n)
+    solution = coords[i][0] * coords[j][0]
 
-    last_i, last_j = 0, 0
-    for dist, i, j in distances:
-        uf.union(i, j)
-        if uf.num_circuits() == 1:
-            last_i, last_j = i, j
-            break
-
-    result = coords[last_i][0] * coords[last_j][0]
-    print(f"Part 2: {result}")
+    print(f"Part 2: {solution}")
 
 
 def main(lines: list[str]) -> None:
