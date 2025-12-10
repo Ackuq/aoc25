@@ -1,10 +1,9 @@
 from collections import deque
-from copy import deepcopy
 from typing import cast
 
 import pulp
 
-Input = tuple[list[bool], list[set[int]], list[int]]
+Input = tuple[int, list[set[int]], list[int]]
 
 
 def parse_input(lines: list[str]) -> list[Input]:
@@ -12,10 +11,11 @@ def parse_input(lines: list[str]) -> list[Input]:
 
     for line in lines:
         parts = line.strip().split()
-        diagram = [
-            True if light == "#" else False
-            for light in parts[0].removeprefix("[").removesuffix("]")
-        ]
+        diagram = sum(
+            1 << i
+            for i, light in enumerate(parts[0].removeprefix("[").removesuffix("]"))
+            if light == "#"
+        )
         buttons = [
             {int(num) for num in button.removeprefix("(").removesuffix(")").split(",")}
             for button in parts[1:-1]
@@ -31,23 +31,22 @@ def parse_input(lines: list[str]) -> list[Input]:
 def part1(inputs: list[Input]) -> None:
     solution = 0
     for diagram, buttons, _ in inputs:
-        queue = deque(([False] * len(diagram), button, 1) for button in buttons)
-        seen: set[str] = set()
+        n_buttons = len(buttons)
+        queue = deque((0, i, 1) for i in range(n_buttons))
+        seen: set[tuple[int, int]] = set()
         while queue:
-            curr, button, presses = queue.popleft()
-            key = ",".join(str(b) for b in curr) + " " + str(button)
-            if key in seen:
+            curr, i_button, presses = queue.popleft()
+            if (curr, i_button) in seen:
                 continue
-            seen.add(key)
-            next_lights = deepcopy(curr)
-            for num in button:
-                next_lights[num] = not next_lights[num]
+            seen.add((curr, i_button))
 
-            if next_lights == diagram:
+            curr ^= sum(1 << num for num in buttons[i_button])
+
+            if curr == diagram:
                 solution += presses
                 break
 
-            queue.extend((next_lights, button, presses + 1) for button in buttons)
+            queue.extend((curr, i, presses + 1) for i in range(n_buttons))
 
     print(f"Part 1: {solution}")
 
@@ -71,7 +70,7 @@ def part2(inputs: list[Input]) -> None:
         prob.solve(pulp.PULP_CBC_CMD(msg=False))
         min_sum += cast(int, pulp.value(prob.objective))
 
-    print(f"Part 2: {min_sum}")
+    print(f"Part 2: {int(min_sum)}")
 
 
 def main(lines: list[str]) -> None:
